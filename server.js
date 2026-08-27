@@ -57,17 +57,18 @@ app.get("/api/v1/dashboard", async (req, res) => {
     const data = result.rows[0];
 
     res.json({
-      mode: "AUTO",
-      online: true,
-      temperature: Number(data.temperature),
-      humidity: Number(data.humidity),
-      pressure: Number(data.pressure),
-      lux: Number(data.lux),
-      gasValue: data.gas_value,
-      gasAlarm: data.gas_alarm,
-      roomOccupied: data.room_occupied,
-      timestamp: data.created_at
-    });
+  mode: "AUTO",
+  online: true,
+  temperature: Number(data.temperature),
+  humidity: Number(data.humidity),
+  pressure: Number(data.pressure),
+  lux: Number(data.lux),
+  gasValue: data.gas_value,
+  gasAlarm: data.gas_alarm,
+  roomOccupied: data.room_occupied,
+  coolingDemand: data.cooling_demand,
+  timestamp: data.created_at
+});
 
   } catch (error) {
     console.error(error);
@@ -82,39 +83,42 @@ app.get("/api/v1/dashboard", async (req, res) => {
 app.post("/api/v1/sensors", async (req, res) => {
   try {
     const {
-      temperature,
-      humidity,
-      pressure,
-      lux,
-      gasValue,
-      gasAlarm,
-      roomOccupied
-    } = req.body;
+  temperature,
+  humidity,
+  pressure,
+  lux,
+  gasValue,
+  gasAlarm,
+  roomOccupied,
+  coolingDemand
+} = req.body;
 
     const result = await pool.query(
-      `
-      INSERT INTO sensor_readings (
-        temperature,
-        humidity,
-        pressure,
-        lux,
-        gas_value,
-        gas_alarm,
-        room_occupied
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-      `,
-      [
-        temperature,
-        humidity,
-        pressure,
-        lux,
-        gasValue,
-        gasAlarm,
-        roomOccupied
-      ]
-    );
+  `
+  INSERT INTO sensor_readings (
+    temperature,
+    humidity,
+    pressure,
+    lux,
+    gas_value,
+    gas_alarm,
+    room_occupied,
+    cooling_demand
+  )
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  RETURNING *
+  `,
+  [
+    temperature,
+    humidity,
+    pressure,
+    lux,
+    gasValue,
+    gasAlarm,
+    roomOccupied,
+    coolingDemand
+  ]
+);
 
     res.status(201).json({
       message: "Sensor data saved successfully",
