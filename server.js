@@ -79,6 +79,58 @@ app.get("/api/v1/dashboard", async (req, res) => {
   }
 });
 
+app.post("/api/v1/sensors", async (req, res) => {
+  try {
+    const {
+      temperature,
+      humidity,
+      pressure,
+      lux,
+      gasValue,
+      gasAlarm,
+      roomOccupied
+    } = req.body;
+
+    const result = await pool.query(
+      `
+      INSERT INTO sensor_readings (
+        temperature,
+        humidity,
+        pressure,
+        lux,
+        gas_value,
+        gas_alarm,
+        room_occupied
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+      `,
+      [
+        temperature,
+        humidity,
+        pressure,
+        lux,
+        gasValue,
+        gasAlarm,
+        roomOccupied
+      ]
+    );
+
+    res.status(201).json({
+      message: "Sensor data saved successfully",
+      data: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Failed to save sensor data",
+      error: error.message
+    });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
