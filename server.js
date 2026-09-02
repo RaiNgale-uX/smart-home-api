@@ -1,6 +1,9 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
+const mqtt = require("mqtt");
 
 const app = express();
 
@@ -13,6 +16,31 @@ const pool = new Pool({
     rejectUnauthorized: false
   }
 });
+
+
+const mqttClient = mqtt.connect({
+  host: process.env.MQTT_HOST,
+  port: Number(process.env.MQTT_PORT || 8883),
+  protocol: "mqtts",
+  username: process.env.MQTT_USERNAME,
+  password: process.env.MQTT_PASSWORD,
+  reconnectPeriod: 5000,
+  connectTimeout: 15000
+});
+
+mqttClient.on("connect", () => {
+  console.log("MQTT conectado ao HiveMQ");
+});
+
+mqttClient.on("reconnect", () => {
+  console.log("MQTT a reconectar...");
+});
+
+mqttClient.on("error", (error) => {
+  console.error("MQTT erro:", error.message);
+});
+
+
 
 app.get("/", (req, res) => {
   res.json({
@@ -133,6 +161,62 @@ app.post("/api/v1/sensors", async (req, res) => {
       error: error.message
     });
   }
+});
+
+const allowedCommands = {
+  "casa/cmd/iluminacao": ["ON", "OFF"],
+  "casa/cmd/luz_interior": ["ON", "OFF"],
+  "casa/cmd/alarme": ["ON", "OFF"],
+  "casa/cmd/ar": ["ON", "OFF"],
+  "casa/cmd/modo": ["AUTO", "MANUAL"]
+};
+
+app.post("/api/v1/commands", (req, res) => {
+  const { topic, payload } = req.body;
+
+  if (!topic || payload === undefined) {
+    return res.status(400).json({
+      message: "topic and payload are required"
+    });
+  }
+
+  if (!allowedCommands[topic]) {
+    return res.status(400).json({
+      message: "Invalid MQTT topic"
+    });
+  }
+
+  const command = String(payload).toUpperCase();
+
+  if (!allowedCommands[topic].includes(command)) {
+    return res.status(400).json({
+      message: "Invalid payload for this topic"
+    });
+  }
+
+  if (!mqttClient.connected) {
+    return res.status(503).json({
+      message: "MQTT broker unavailable"
+    });
+  }
+
+  mqttClient.publish(topic, command, { qos: 1 }, (error) => {
+    if (error) {
+      console.error("MQTT publish error:", error);
+
+      return res.status(500).json({
+        message: "Failed to publish MQTT command"
+      });
+    }
+
+    console.log(`MQTT → ${topic}: ${command}`);
+
+    res.json({
+      message: "Command published successfully",
+      topic,
+      payload: command
+    });
+  });
 });
 
 const PORT = process.env.PORT || 3000;
