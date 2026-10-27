@@ -166,6 +166,8 @@ app.post("/api/v1/sensors", async (req, res) => {
 const allowedCommands = {
   "casa/cmd/iluminacao": ["ON", "OFF"],
   "casa/cmd/luz_interior": ["ON", "OFF"],
+  "casa/cmd/lampada_sala": ["ON", "OFF"],
+  "casa/cmd/lampada_quarto": ["ON", "OFF"],
   "casa/cmd/alarme": ["ON", "OFF"],
   "casa/cmd/ar": ["ON", "OFF"],
   "casa/cmd/modo": ["AUTO", "MANUAL"]
